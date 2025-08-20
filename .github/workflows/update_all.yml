@@ -3,10 +3,10 @@ name: Auto-generate all.md
 on:
   push:
     paths:
-      - 'en/claude-code.md'
+      - 'notes/en/claude-code.md'
   pull_request:
     paths:
-      - 'en/claude-code.md'
+      - 'notes/en/claude-code.md'
 
 jobs:
   generate:
