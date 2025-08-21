@@ -21,11 +21,8 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Install dependencies
-      run: npm install
-
     - name: Generate all.md
-      run: node combine_notes.js
+      run: node combine-notes.js
 
     - name: Commit and push changes
       if: github.actor != 'github-actions[bot]'
