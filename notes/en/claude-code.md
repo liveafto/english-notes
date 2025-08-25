@@ -25,6 +25,7 @@
 -   **Clauding…**
 -   **Coalescing…**
 -   **Cogitating…**
+-   **Combobulating…**
 -   **Compacting conversation…**
 -   **Compiling…**
 -   **Composing…**
@@ -65,6 +66,7 @@
 -   **Grooving…**
 -   **Gusting…**
 -   **Harmonizing…**
+-   **Hashing…**
 -   **Herding…**
 -   **Hexing…**
 -   **Hibernating…**
@@ -94,6 +96,7 @@
 -   **Meandering…**
 -   **Metamorphosing…**
 -   **Migrating…**
+-   **Misting…**
 -   **Moonwalking…**
 -   **Moseying…**
 -   **Mulling…**
@@ -112,14 +115,20 @@
 -   **Philosophising…**
 -   **Photosynthesizing…**
 -   **Pipelining…**
+-   **Poaching…**
 -   **Pollinating…**
+-   **Pondering…**
 -   **Pontificating…**
+-   **Pouncing…**
+-   **Precipitating…**
 -   **Prestidigitating…**
 -   **Proofing…**
+-   **Propagating…**
 -   **Puttering…**
 -   **Puzzling…**
 -   **Quantumizing…**
 -   **Querying…**
+-   **Razzle-dazzling…**
 -   **Razzmatazzing…**
 -   **Recombobulating…**
 -   **Refactoring…**
@@ -134,6 +143,7 @@
 -   **Shucking…**
 -   **Simmering…**
 -   **Skedaddling…**
+-   **Sketching…**
 -   **Skullduggering…**
 -   **Slithering…**
 -   **Smooshing…**
@@ -151,12 +161,15 @@
 -   **Syncopating…**
 -   **Synthesizing…**
 -   **Teleporting…**
+-   **Thaumaturging…**
+-   **Thinking…**
 -   **Thundering…**
 -   **Tinkering…**
 -   **Tomfoolering…**
 -   **Topsy-turvying…**
 -   **Transmuting…**
 -   **Twisting…**
+-   **Undulating…**
 -   **Unfurling…**
 -   **Vaporizing…**
 -   **Vibing…**
