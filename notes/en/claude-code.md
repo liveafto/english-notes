@@ -67,6 +67,7 @@
 -   **Gusting…**
 -   **Harmonizing…**
 -   **Hashing…**
+-   **Hatching…**
 -   **Herding…**
 -   **Hexing…**
 -   **Hibernating…**
