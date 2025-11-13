@@ -1,34 +1,43 @@
 name: Auto-generate all.md
 
 on:
-  push:
-    paths:
-      - 'notes/en/claude-code.md'
-  pull_request:
-    paths:
-      - 'notes/en/claude-code.md'
+  workflow_dispatch:
+    inputs:
+      langs:
+        description: "Comma-separated language codes to include (e.g. zh)"
+        required: false
+        default: "zh"
 
 jobs:
   generate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-
-    - name: Generate all.md
-      run: node combine-notes.js
-
-    - name: Commit and push changes
-      if: github.actor != 'github-actions[bot]'
-      run: |
-        git config --global user.name "github-actions"
-        git config --global user.email "actions@github.com"
-        git add notes/all.md
-        git diff --cached --quiet || git commit -m "Auto-update all.md"
-        git push
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+      - name: Generate all.md
+        id: generate
+        run: |
+          echo "Generating all.md for langs: ${{ github.event.inputs.langs }}"
+          node combine-notes.js "${{ github.event.inputs.langs }}"
+      - name: Check generation result
+        if: failure()
+        run: |
+          echo "all.md was not generated due to errors (missing keys, duplicate translations, etc.)"
+          echo "Please fix errors in the language files first."
+      - name: Commit and push changes
+        if: success() && github.actor != 'github-actions[bot]'
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add notes/all.md
+          git diff --cached --quiet || git commit -m "Auto-update all.md"
+          git push

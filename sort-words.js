@@ -1,7 +1,9 @@
 const fs = require("fs");
+const path = require("path");
 
 const EN_PATH = "notes/en/claude-code.md";
-const ZH_PATH = "notes/zh/claude-code.md";
+const LANGS = ["zh"];
+const LANG_FOLDER = "notes";
 
 function normalizeEllipsis(s) {
 	return s
@@ -11,65 +13,123 @@ function normalizeEllipsis(s) {
 }
 
 function parseEnglish(content) {
-	const keys = new Set();
-	const re = /^(?:\s*-\s+\*\*(.*?)\*\*|\s{0,4}(?!-)([A-Za-z].*?(?:…|\.\.\.))|\s*-\s+([A-Za-z].*?(?:…|\.\.\.)))\s*$/gm;
+	const re = /^(?:\s*-\s+\*\*(.*?)\*\*)/gm;
+	const keysRaw = [];
 	let m;
 	while ((m = re.exec(content)) !== null) {
-		const raw = m[1] || m[2] || m[3];
-		if (!raw) continue;
-		const en = normalizeEllipsis(raw);
-		if (en) keys.add(en);
+		if (m[1]) keysRaw.push(normalizeEllipsis(m[1]));
 	}
-	return keys;
+	return keysRaw;
 }
 
-function parseZh(content) {
+function parseLang(lang, content) {
 	const dict = {};
 	const re = /^\s*-\s+\*\*(.*?)\*\*(.*)$/gm;
 	let m;
 	while ((m = re.exec(content)) !== null) {
 		const en = normalizeEllipsis(m[1]);
-		const zh = (m[2] || "").trim();
+		const text = (m[2] || "").trim();
 		if (!dict[en]) dict[en] = [];
-		if (zh) dict[en].push(zh);
+		if (text) dict[en].push(text);
 	}
 	return dict;
 }
 
-function formatEn(keys) {
-	return keys.map((en) => `-   **${en}**`).join("\n");
-}
+// Main
+try {
+	//Read
+	const enRaw = fs.readFileSync(EN_PATH, "utf-8");
+	const enKeysRaw = parseEnglish(enRaw);
 
-function formatZh(keys, zhDict, missing) {
-	return keys
-		.map((en) => {
-			let arr = (zhDict[en] || []).map((s) => s.trim()).filter(Boolean);
-			arr = [...new Set(arr)];
-			if (arr.length === 0) {
-				missing.push(en);
-				return `-   **${en}**`;
-			}
-			const zh = arr.join(" / ");
-			return `-   **${en}** ${zh}`;
-		})
-		.join("\n");
-}
+	// filter en
+	const seenEn = new Set();
+	const uniqueEnKeys = [];
+	const removedEnKeys = [];
+	for (const key of enKeysRaw) {
+		if (seenEn.has(key)) removedEnKeys.push(key);
+		else {
+			seenEn.add(key);
+			uniqueEnKeys.push(key);
+		}
+	}
 
-const enRaw = fs.readFileSync(EN_PATH, "utf-8");
-const zhRaw = fs.existsSync(ZH_PATH) ? fs.readFileSync(ZH_PATH, "utf-8") : "";
+	// read langs
+	const allLangDict = {};
+	for (const lang of LANGS) {
+		const langPath = path.join(LANG_FOLDER, lang, "claude-code.md");
+		const raw = fs.existsSync(langPath) ? fs.readFileSync(langPath, "utf-8") : "";
+		allLangDict[lang] = parseLang(lang, raw);
+	}
 
-const enKeys = parseEnglish(enRaw);
-const zhDict = parseZh(zhRaw);
+	// check en and langs
+	let hasError = false;
+	if (removedEnKeys.length > 0) {
+		hasError = true;
+		console.warn("⚠️ Duplicate English keys removed:");
+		removedEnKeys.forEach((k) => console.warn(" -", k));
+	}
 
-const keys = Array.from(enKeys).sort((a, b) => a.localeCompare(b, "en", {sensitivity: "base"}));
+	for (const lang of LANGS) {
+		const dict = allLangDict[lang];
 
-fs.writeFileSync(EN_PATH, formatEn(keys), "utf-8");
+		// missing translations
+		const missing = uniqueEnKeys.filter((k) => !dict[k] || dict[k].length === 0);
+		if (missing.length > 0) {
+			hasError = true;
+			console.warn(`⇨ Missing translations in ${lang}:`);
+			missing.forEach((k) => console.warn(" -", k));
+		}
 
-const missing = [];
-fs.writeFileSync(ZH_PATH, formatZh(keys, zhDict, missing), "utf-8");
+		//more key
+		const extra = Object.keys(dict).filter((k) => !uniqueEnKeys.includes(k));
+		if (extra.length > 0) {
+			hasError = true;
+			console.warn(`Extra keys in ${lang}:`);
+			extra.forEach((k) => console.warn(" -", k));
+		}
 
-console.log(`Done. Wrote ${EN_PATH} & ${ZH_PATH}`);
-if (missing.length) {
-	console.log("Missing translations for the following keys:");
-	missing.forEach((k) => console.log(" -", k));
+		// duplicate translations
+		const langToEn = {};
+		for (const [en, arr] of Object.entries(dict)) {
+			arr.forEach((val) => {
+				if (!langToEn[val]) langToEn[val] = [];
+				langToEn[val].push(en);
+			});
+		}
+		const dupTrans = Object.entries(langToEn).filter(([_, ens]) => ens.length > 1);
+		if (dupTrans.length > 0) {
+			console.warn(`⇨ Duplicate translations in ${lang}:`);
+			dupTrans.forEach(([val, ens]) => console.warn(` - "${val}" -> ${ens.join(", ")}`));
+		}
+
+		//has error not write file
+		if (hasError) {
+			console.error("\n Errors detected. Please fix them before writing files.");
+			process.exit(1);
+		}
+
+		//sort and write en back
+		const sortedEnKeys = uniqueEnKeys.sort((a, b) => a.localeCompare(b, "en", {sensitivity: "base"}));
+
+		fs.writeFileSync(EN_PATH, sortedEnKeys.map((k) => `-   **${k}**`).join("\n"), "utf-8");
+
+		//sort and write langs back
+		for (const lang of LANGS) {
+			const dict = allLangDict[lang];
+			const langPath = path.join(LANG_FOLDER, lang, "claude-code.md");
+
+			const content = sortedEnKeys
+				.map((k) => {
+					const arr = (dict[k] || []).map((s) => s.trim()).filter(Boolean);
+					return arr.length > 0 ? `-   **${k}** ${arr.join(" / ")}` : `-   **${k}**`;
+				})
+				.join("\n");
+
+			fs.writeFileSync(langPath, content, "utf-8");
+		}
+		console.log(`All files are checked, sorted, and written successfully.`);
+	}
+} catch (error) {
+	console.error("❌ Script failed with error:", error);
+	process.exit(1);
 }
